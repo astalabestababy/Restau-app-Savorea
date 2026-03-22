@@ -172,7 +172,7 @@ function HomeListHeader({
                         <Text style={styles.heroButtonText}>Browse Menu</Text>
                     </TouchableOpacity>
                 </View>
-                <Image source={require('../../assets/adobo.png')} style={styles.heroImage} />
+                <Image source={require('../../assets/icon.png')} style={styles.heroImage} />
             </View>
 
             <View style={styles.section}>
