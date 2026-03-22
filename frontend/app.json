@@ -43,7 +43,8 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "RECORD_AUDIO"
-      ]
+      ],
+      "package": "com.savorea.app"
     },
     "plugins": [
       "expo-secure-store"
@@ -54,7 +55,8 @@
     "extra": {
       "eas": {
         "projectId": "20f13bdd-3000-4410-b9de-dd85535ac2a0"
-      }
+      },
+      "apiUrl": "https://savorea.onrender.com/api"
     }
   }
 }

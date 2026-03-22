@@ -5,7 +5,7 @@ import API_URL from '../../config/api';
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
   async () => {
-    const response = await axios.get(`${API_URL}/menu`);
+    const response = await axios.get(`${API_URL}/menu`, { timeout: 25000 });
     return response.data;
   }
 );

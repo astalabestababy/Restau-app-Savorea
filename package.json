@@ -1,9 +1,12 @@
 {
-  "dependencies": {
+  "name": "restaurantapp-workspace",
+  "private": true,
+  "scripts": {
+    "start:frontend": "cd frontend && npm start",
+    "start:backend": "cd backend && npm start"
+  },
+  "devDependencies": {
     "concurrently": "^9.2.1",
-    "expo": "^55.0.8",
-    "react": "19.2.0",
-    "react-native": "0.83.2",
-    "wait-on": "^9.0.4"
+    "wait-on": "^9.2.4"
   }
 }

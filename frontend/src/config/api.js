@@ -23,6 +23,9 @@ function normalizeApiUrl(url) {
     return u.endsWith('/api') ? u : `${u}/api`;
 }
 
+/** Production API (Render). Used when env/extra are missing — e.g. misconfigured EAS env. */
+const DEFAULT_PRODUCTION_API = 'https://savorea.onrender.com/api';
+
 const getApiUrl = () => {
     const fromEnv = normalizeApiUrl(process.env.EXPO_PUBLIC_API_URL);
     if (fromEnv) {
@@ -48,7 +51,11 @@ const getApiUrl = () => {
         return `http://${host}:5000/api`;
     }
 
-    return 'http://192.168.100.13:5000/api';
+    // Standalone APK / production: never use a random LAN IP — it causes infinite loading on menu fetch.
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        return 'http://192.168.100.13:5000/api';
+    }
+    return DEFAULT_PRODUCTION_API;
 };
 
 const API_URL = getApiUrl();

@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "42650faa-a3ab-4221-b682-4f05f9fe8d82"
+      }
+    },
+    "android": {
+      "package": "com.savorea.app"
+    }
+  }
+}
