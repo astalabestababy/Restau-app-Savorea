@@ -123,11 +123,24 @@ exports.updatePushToken = async (req, res) => {
         const user = await User.findById(req.user.id);
 
         if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!pushToken || typeof pushToken !== 'string') {
+            return res.status(400).json({ message: 'Valid push token is required' });
+        }
 
-        user.pushToken = pushToken;
+        const normalizedToken = pushToken.trim();
+        const existingTokens = Array.isArray(user.pushTokens)
+            ? user.pushTokens.filter(Boolean)
+            : [];
+
+        if (!existingTokens.includes(normalizedToken)) {
+            existingTokens.push(normalizedToken);
+        }
+
+        user.pushTokens = existingTokens;
+        user.pushToken = normalizedToken;
         await user.save();
         
-        res.json({ message: 'Push token updated' });
+        res.json({ message: 'Push token updated', pushTokens: user.pushTokens });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

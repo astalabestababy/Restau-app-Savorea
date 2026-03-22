@@ -34,11 +34,32 @@ function buildPromoPayloadDoc(doc) {
     });
 }
 
+function getUserPushTokens(user) {
+    const tokens = [];
+
+    if (Array.isArray(user?.pushTokens)) {
+        for (const token of user.pushTokens) {
+            if (typeof token === 'string' && token.trim()) {
+                tokens.push(token.trim());
+            }
+        }
+    }
+
+    if (typeof user?.pushToken === 'string' && user.pushToken.trim()) {
+        tokens.push(user.pushToken.trim());
+    }
+
+    return [...new Set(tokens)];
+}
+
 async function usersWithPushTokens() {
     return User.find({
         role: 'user',
         isActive: true,
-        pushToken: { $exists: true, $nin: [null, ''] },
+        $or: [
+            { pushToken: { $exists: true, $nin: [null, ''] } },
+            { pushTokens: { $exists: true, $ne: [] } },
+        ],
     });
 }
 
@@ -62,9 +83,10 @@ exports.sendPromotion = async (req, res) => {
 
         const messages = [];
         for (const user of users) {
-            if (Expo.isExpoPushToken(user.pushToken)) {
+            for (const token of getUserPushTokens(user)) {
+                if (!Expo.isExpoPushToken(token)) continue;
                 messages.push({
-                    to: user.pushToken,
+                    to: token,
                     sound: 'default',
                     title: `🎉 ${title}`,
                     body: `${description}${discountPercent > 0 ? ` Save ${discountPercent}%!` : ''}`,
@@ -246,27 +268,29 @@ exports.updateOrderStatus = async (req, res) => {
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
         // Send Push Notification
-        console.log('Order user:', order.user ? { name: order.user.name, pushToken: order.user.pushToken ? 'present' : 'null' } : 'null');
-        if (order.user && order.user.pushToken) {
-            console.log('Push token valid:', Expo.isExpoPushToken(order.user.pushToken));
+        const userTokens = getUserPushTokens(order.user);
+        console.log('Order user:', order.user ? { name: order.user.name, pushTokens: userTokens.length } : 'null');
+        if (userTokens.length > 0) {
+            console.log('Valid push tokens:', userTokens.filter(token => Expo.isExpoPushToken(token)).length);
         }
-        if (order.user && order.user.pushToken && Expo.isExpoPushToken(order.user.pushToken)) {
-            const messages = [{
-                to: order.user.pushToken,
+        const validTokens = userTokens.filter(token => Expo.isExpoPushToken(token));
+        if (validTokens.length > 0) {
+            const messages = validTokens.map(token => ({
+                to: token,
                 sound: 'default',
                 title: 'Order Update',
                 body: `Your order #${order._id.toString().slice(-6).toUpperCase()} is now ${status}`,
                 data: { orderId: order._id },
-            }];
+            }));
 
             try {
-                const ticket = await expo.sendPushNotificationsAsync(messages);
+                const ticket = await deliverExpoPushMessages(messages);
                 console.log('Push notification sent:', ticket);
             } catch (error) {
                 console.error('Error sending push notification:', error);
             }
         } else {
-            console.log('Push notification not sent: no valid pushToken');
+            console.log('Push notification not sent: no valid push token');
         }
 
         res.json(order);
@@ -391,9 +415,10 @@ exports.createPromo = async (req, res) => {
 
         const messages = [];
         for (const user of users) {
-            if (Expo.isExpoPushToken(user.pushToken)) {
+            for (const token of getUserPushTokens(user)) {
+                if (!Expo.isExpoPushToken(token)) continue;
                 messages.push({
-                    to: user.pushToken,
+                    to: token,
                     sound: 'default',
                     title: `🎉 New Promotion: ${promo.title}`,
                     body: `${promo.description}${discountLine}`,
