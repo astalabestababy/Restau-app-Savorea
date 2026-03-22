@@ -137,7 +137,7 @@ const OrderHistoryScreen = () => {
                                     {food.quantity}x {food.name}
                                 </Text>
                                 <Text style={[styles.foodPrice, { color: colors.textSecondary }]}>
-                                    ?{(food.price * food.quantity).toFixed(2)}
+                                    {'\u20B1'}{(food.price * food.quantity).toFixed(2)}
                                 </Text>
                             </View>
                             {item.status === 'Delivered' && (
@@ -169,7 +169,7 @@ const OrderHistoryScreen = () => {
                     </Text>
                 </View>
                 <Text style={[styles.totalAmount, { color: colors.primary }]}>
-                    ?{item.totalAmount.toFixed(2)}
+                    {'\u20B1'}{item.totalAmount.toFixed(2)}
                 </Text>
             </View>
 
