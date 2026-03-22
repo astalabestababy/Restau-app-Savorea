@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuthToken, setAuthToken, clearAuthToken } from '../utils/authToken';
 import API_URL from '../config/api';
 import Constants from 'expo-constants';
+import { registerForPushNotificationsAsync } from '../services/NotificationService';
  
 
 const AuthContext = createContext();
@@ -45,6 +46,14 @@ export const AuthProvider = ({ children }) => {
             setUser(userData);
             await setAuthToken(data.token);
             await AsyncStorage.setItem('user', JSON.stringify(userData));
+            try {
+                const pushToken = await registerForPushNotificationsAsync();
+                if (pushToken) {
+                    await updatePushToken(pushToken);
+                }
+            } catch (e) {
+                console.error('Push token registration after login failed:', e);
+            }
             return { success: true, user: userData };
         }
         return { success: false, message: data.message };

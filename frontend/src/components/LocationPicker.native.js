@@ -21,6 +21,7 @@ const LocationPicker = ({ visible, onClose, onSelectAddress }) => {
     const [addressPreview, setAddressPreview] = useState('Tap on the map to select a location');
     const [loading, setLoading] = useState(true);
     const [searching, setSearching] = useState(false);
+    const [mapReady, setMapReady] = useState(false);
 
     useEffect(() => {
         if (visible) {
@@ -28,6 +29,8 @@ const LocationPicker = ({ visible, onClose, onSelectAddress }) => {
                 let { status } = await Location.requestForegroundPermissionsAsync();
                 if (status !== 'granted') {
                     Alert.alert('Permission denied', 'Allow location access to use the map.');
+                    setLocation(null);
+                    setSelectedLocation(null);
                     setLoading(false);
                     return;
                 }
@@ -53,10 +56,14 @@ const LocationPicker = ({ visible, onClose, onSelectAddress }) => {
                         longitudeDelta: 0.01,
                     };
                     setLocation(manila);
+                    setSelectedLocation(manila);
                 } finally {
                     setLoading(false);
                 }
             })();
+        } else {
+            setLoading(true);
+            setMapReady(false);
         }
     }, [visible]);
 
@@ -103,12 +110,24 @@ const LocationPicker = ({ visible, onClose, onSelectAddress }) => {
                         <ActivityIndicator size="large" color="#D72323" />
                         <Text style={{ marginTop: 10 }}>Getting your location...</Text>
                     </View>
+                ) : !location ? (
+                    <View style={styles.center}>
+                        <Ionicons name="location-outline" size={42} color="#D72323" />
+                        <Text style={styles.fallbackTitle}>Map unavailable</Text>
+                        <Text style={styles.fallbackText}>
+                            Please allow location permission or enter the address manually in the cart.
+                        </Text>
+                        <TouchableOpacity style={styles.confirmButton} onPress={onClose}>
+                            <Text style={styles.confirmText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
                 ) : (
                     <>
                         <MapView
                             style={styles.map}
                             initialRegion={location}
                             onPress={handleMapPress}
+                            onMapReady={() => setMapReady(true)}
                         >
                             {selectedLocation && (
                                 <Marker
@@ -131,6 +150,8 @@ const LocationPicker = ({ visible, onClose, onSelectAddress }) => {
                                 <Text style={styles.addressLabel}>Selected Address:</Text>
                                 {searching ? (
                                     <ActivityIndicator size="small" color="#D72323" />
+                                ) : !mapReady ? (
+                                    <Text style={styles.addressValue}>Loading map...</Text>
                                 ) : (
                                     <Text style={styles.addressValue} numberOfLines={2}>
                                         {addressPreview}
@@ -160,6 +181,20 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    fallbackTitle: {
+        marginTop: 12,
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    fallbackText: {
+        marginTop: 8,
+        marginBottom: 20,
+        textAlign: 'center',
+        color: '#666',
+        lineHeight: 20,
     },
     topContainer: {
         position: 'absolute',
