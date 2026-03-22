@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Savorea",
+    "slug": "savorea",
+    "owner": "mitochondrion",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff",
+      "duration": 4000
+    },
+    "ios": {
+      "supportsTablet": true,
+      "loadingScreen": {
+        "image": "./assets/splash-icon.png"
+      },
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
+        "NSLocationWhenInUseUsageDescription": "Allow Savorea to use your location to deliver your food accurately.",
+        "NSCameraUsageDescription": "Allow Savorea to access your camera to take photos of menu items.",
+        "NSPhotoLibraryUsageDescription": "Allow Savorea to access your photos to select menu item images.",
+        "NSMicrophoneUsageDescription": "Allow Savorea to access your microphone for video recording."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "usesCleartextTraffic": true,
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "20f13bdd-3000-4410-b9de-dd85535ac2a0"
+      }
+    }
+  }
+}
