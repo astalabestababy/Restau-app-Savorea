@@ -1,1 +1,31 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Environment & secrets (never commit — set these in Render dashboard)
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Expo / Metro / build
+frontend/.expo/
+frontend/dist/
+frontend/web-build/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+*.orig.*
+
+# Metro / caches
+.metro-cache/
+
+# Local upload temp files (avatars, etc. — Render should use ephemeral disk or Cloudinary only)
+backend/public/uploads/
