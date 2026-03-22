@@ -14,9 +14,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import Logo from '../../components/Logo';
 import { useCart } from '../../context/CartContext';
 import { useTheme } from '../../context/ThemeContext';
+
+const APP_ICON = require('../../../assets/icon.png');
 
 const LoginScreen = () => {
     const { login } = useAuth();
@@ -46,13 +47,7 @@ const LoginScreen = () => {
                 navigation.navigate('MainTabs');
             }
         } else {
-            if (result.message.includes('verify')) {
-                Alert.alert('Verify Email', result.message, [
-                    { text: 'Verify Now', onPress: () => navigation.navigate('Verify', { email }) }
-                ]);
-            } else {
-                Alert.alert('Login Failed', result.message);
-            }
+            Alert.alert('Login Failed', result.message);
         }
     };
 
@@ -70,7 +65,7 @@ const LoginScreen = () => {
 
                 <View style={styles.content}>
                     <View style={styles.logoContainer}>
-                        <Logo size={120} />
+                        <Image source={APP_ICON} style={styles.logoImage} resizeMode="contain" />
                         <Text style={[styles.logoText, { color: colors.primary }]}>Savorea</Text>
                     </View>
 
@@ -149,6 +144,11 @@ const styles = StyleSheet.create({
     logoContainer: {
         alignItems: 'center',
         marginBottom: 40,
+    },
+    logoImage: {
+        width: 120,
+        height: 120,
+        borderRadius: 28,
     },
     logoText: {
         fontSize: 20,

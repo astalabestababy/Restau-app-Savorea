@@ -14,13 +14,6 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    isVerified: {
-        type: Boolean,
-        default: false
-    },
-    verificationCode: {
-        type: String
-    },
     phoneNumber: {
         type: String
     },

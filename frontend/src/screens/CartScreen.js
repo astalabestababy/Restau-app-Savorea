@@ -55,15 +55,6 @@ const CartScreen = () => {
             return;
         }
 
-        if (!user.isVerified) {
-            Alert.alert(
-                'Verification Required',
-                'You must verify your email before placing an order!',
-                [{ text: 'OK', onPress: () => navigation.navigate('Verify', { email: user.email }) }]
-            );
-            return;
-        }
-
         if (!user.address && !newAddress) {
             Alert.alert('Address Required', 'Please add a delivery address before checking out.');
             return;

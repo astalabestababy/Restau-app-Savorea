@@ -147,7 +147,6 @@ const avatarUpload = multer({ storage: avatarStorage });
 
 // Auth Routes (register uses JSON only; optional avatarBase64 string — avoids RN multipart body issues)
 app.post('/api/auth/register', authController.register);
-app.post('/api/auth/verify', authController.verify);
 app.post('/api/auth/login', authController.login);
 app.put('/api/auth/profile', auth, authController.updateProfile);
 app.put('/api/auth/push-token', auth, authController.updatePushToken);
@@ -232,6 +231,10 @@ app.get('/api/ratings', async (req, res) => {
     }
 });
 app.post('/api/seed', async (req, res) => {
+    if (process.env.ENABLE_PUBLIC_SEED !== 'true') {
+        return res.status(403).json({ message: 'Seed route is disabled for deployment.' });
+    }
+
     try {
         const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
         const getCloudinaryUrl = (publicId) => `https://res.cloudinary.com/${cloudName}/image/upload/restaurant_menu/${publicId}.jpg`;

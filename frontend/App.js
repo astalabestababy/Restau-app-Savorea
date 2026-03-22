@@ -19,7 +19,6 @@ import { OrderProvider } from './src/context/OrderContext';
 import MainNavigator from './src/navigation/TabNavigator';
 import LoginScreen from './src/screens/auth/LoginScreen';
 import RegisterScreen from './src/screens/auth/RegisterScreen';
-import VerificationScreen from './src/screens/auth/VerificationScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import ProductDetailsScreen from './src/screens/ProductDetailsScreen';
@@ -100,7 +99,6 @@ const Navigation = () => {
         <Stack.Screen name="MainTabs" component={MainNavigator} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Verify" component={VerificationScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
         <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />

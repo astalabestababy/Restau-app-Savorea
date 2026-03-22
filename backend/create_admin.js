@@ -20,7 +20,6 @@ const createAdmin = async () => {
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(password, salt);
             user.role = 'admin';
-            user.isVerified = true;
             user.isActive = true;
             await user.save();
             console.log('Admin user updated.');
@@ -34,7 +33,6 @@ const createAdmin = async () => {
                 email,
                 password: hashedPassword,
                 role: 'admin',
-                isVerified: true,
                 isActive: true,
                 phoneNumber: '09123456789',
                 address: 'Restaurant HQ'

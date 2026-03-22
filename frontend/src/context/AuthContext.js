@@ -73,27 +73,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const verify = async (email, code) => {
-        const response = await fetch(`${API_URL}/auth/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, code }),
-        });
-        const data = await response.json();
-        if (response.ok) {
-            const userData = {
-                ...data.user,
-                id: data.user.id || data.user._id
-            };
-            setUser(userData);
-            await setAuthToken(data.token);
-            await AsyncStorage.setItem('user', JSON.stringify(userData));
-            return { success: true, user: userData };
-        }
-        return { success: false, message: data.message };
-    };
-
- 
     const logout = async () => {
         setUser(null);
         await clearAuthToken();
@@ -117,7 +96,6 @@ export const AuthProvider = ({ children }) => {
                 id: data._id,
                 name: data.name,
                 email: data.email,
-                isVerified: data.isVerified,
                 address: data.address,
                 phoneNumber: data.phoneNumber,
                 role: data.role,
@@ -179,7 +157,6 @@ export const AuthProvider = ({ children }) => {
                     id: data._id,
                     name: data.name,
                     email: data.email,
-                    isVerified: data.isVerified,
                     address: data.address,
                     phoneNumber: data.phoneNumber,
                     role: data.role,
@@ -197,7 +174,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, verify, logout, updateProfile, uploadAvatar, updatePushToken }}>
+        <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile, uploadAvatar, updatePushToken }}>
             {children}
         </AuthContext.Provider>
     );

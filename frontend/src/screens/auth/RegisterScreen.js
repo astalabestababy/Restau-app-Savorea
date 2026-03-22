@@ -15,11 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import Logo from '../../components/Logo';
 import { useTheme } from '../../context/ThemeContext';
 
 /** Set to true if signup must include a profile photo (course requirement). */
 const REQUIRE_PROFILE_PHOTO = false;
+const APP_ICON = require('../../../assets/icon.png');
 
 const RegisterScreen = () => {
     const { register } = useAuth();
@@ -101,8 +101,9 @@ const RegisterScreen = () => {
         setLoading(false);
 
         if (result.success) {
-            Alert.alert('Success', 'Verification code sent to your email!');
-            navigation.navigate('Verify', { email });
+            Alert.alert('Success', result.message || 'Registration successful.', [
+                { text: 'OK', onPress: () => navigation.navigate('Login') }
+            ]);
         } else {
             Alert.alert('Registration Failed', result.message);
         }
@@ -122,7 +123,7 @@ const RegisterScreen = () => {
 
                 <View style={styles.content}>
                     <View style={styles.logoWrapper}>
-                        <Logo size={80} />
+                        <Image source={APP_ICON} style={styles.logoImage} resizeMode="contain" />
                     </View>
                     <Text style={[styles.title, { color: colors.primary }]}>Savorea</Text>
                     <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Create an account to start ordering your Filipino favorites.</Text>
@@ -227,6 +228,11 @@ const styles = StyleSheet.create({
     logoWrapper: {
         alignItems: 'center',
         marginBottom: 20,
+    },
+    logoImage: {
+        width: 96,
+        height: 96,
+        borderRadius: 24,
     },
     avatarWrap: {
         alignSelf: 'center',

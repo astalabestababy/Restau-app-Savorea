@@ -3,7 +3,6 @@ const Order = require('../models/Order');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/jwt');
-const emailService = require('../services/emailService');
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
@@ -21,14 +20,10 @@ exports.register = async (req, res) => {
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ message: 'User already exists' });
 
-        // Create verification code
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
         user = new User({
             name,
             email,
-            password,
-            verificationCode
+            password
         });
 
         // Hash password
@@ -62,57 +57,9 @@ exports.register = async (req, res) => {
 
         await user.save();
 
-        // Send Real Email
-        const emailSent = await emailService.sendVerificationEmail(email, verificationCode);
-
-        // Fallback LOG TO TERMINAL (In case email fails or for quick debugging)
-        console.log('-----------------------------------------');
-        console.log(`NEW USER REGISTERED: ${email}`);
-        console.log(`VERIFICATION CODE: [ ${verificationCode} ]`);
-        console.log(`EMAIL SENT STATUS: ${emailSent ? 'SUCCESS' : 'FAILED'}`);
-        console.log('-----------------------------------------');
-
         res.status(201).json({
-            message: emailSent
-                ? 'User registered. Please check your email for the verification code.'
-                : 'User registered. (Email failed to send, check console for code).',
+            message: 'User registered successfully.',
             email: user.email
-        });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-// Verify Code
-exports.verify = async (req, res) => {
-    try {
-        const { email, code } = req.body;
-        const user = await User.findOne({ email });
-
-        if (!user) return res.status(404).json({ message: 'User not found' });
-        if (!user.isActive) return res.status(403).json({ message: 'Your account has been deactivated. Please contact support.' });
-        if (user.verificationCode !== code) return res.status(400).json({ message: 'Invalid code' });
-
-        user.isVerified = true;
-        user.verificationCode = undefined;
-        await user.save();
-
-        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-
-        res.json({
-            message: 'Email verified successfully!',
-            token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                isVerified: user.isVerified,
-                address: user.address,
-                phoneNumber: user.phoneNumber,
-                role: user.role,
-                isActive: user.isActive,
-                avatar: user.avatar ?? null
-            }
         });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -127,8 +74,6 @@ exports.login = async (req, res) => {
 
         if (!user) return res.status(400).json({ message: 'Invalid credentials' });
         if (!user.isActive) return res.status(403).json({ message: 'Your account has been deactivated. Please contact support.' });
-        if (!user.isVerified) return res.status(401).json({ message: 'Please verify your email first', email: user.email });
-
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
@@ -140,7 +85,6 @@ exports.login = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                isVerified: user.isVerified,
                 address: user.address,
                 phoneNumber: user.phoneNumber,
                 role: user.role,
