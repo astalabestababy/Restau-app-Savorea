@@ -132,6 +132,22 @@ const CustomDrawerContent = (props) => {
                 <Text style={[styles.drawerItemText, { color: colors.text }]}>Order History</Text>
               </TouchableOpacity>
 
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => props.navigation.navigate('Notifications')}
+              >
+                <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
+                <Text style={[styles.drawerItemText, { color: colors.text }]}>Notifications</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => props.navigation.navigate('Promos')}
+              >
+                <Ionicons name="pricetags-outline" size={22} color={colors.textSecondary} />
+                <Text style={[styles.drawerItemText, { color: colors.text }]}>Promos & discounts</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity 
                 style={styles.drawerItem} 
                 onPress={() => props.navigation.navigate('Profile')}

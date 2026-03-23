@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const MenuItem = require('../models/MenuItem');
 const Promo = require('../models/Promo');
+const Notification = require('../models/Notification');
 const { Expo } = require('expo-server-sdk');
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
@@ -37,6 +38,14 @@ function buildPromoPayloadDoc(doc) {
 function getUserPushTokens(user) {
     const tokens = [];
 
+    if (Array.isArray(user?.pushDevices)) {
+        for (const device of user.pushDevices) {
+            if (typeof device?.token === 'string' && device.token.trim()) {
+                tokens.push(device.token.trim());
+            }
+        }
+    }
+
     if (Array.isArray(user?.pushTokens)) {
         for (const token of user.pushTokens) {
             if (typeof token === 'string' && token.trim()) {
@@ -59,8 +68,22 @@ async function usersWithPushTokens() {
         $or: [
             { pushToken: { $exists: true, $nin: [null, ''] } },
             { pushTokens: { $exists: true, $ne: [] } },
+            { pushDevices: { $exists: true, $ne: [] } },
         ],
     });
+}
+
+async function createNotificationForUser(userId, type, title, body, data = {}) {
+    const notification = new Notification({
+        user: userId,
+        type,
+        title,
+        body,
+        data,
+    });
+
+    await notification.save();
+    return notification;
 }
 
 // Legacy sendPromotion - for backward compatibility with existing routes
@@ -83,14 +106,36 @@ exports.sendPromotion = async (req, res) => {
 
         const messages = [];
         for (const user of users) {
+            const messageBody = `${description}${discountPercent > 0 ? ` Save ${discountPercent}% on your next order.` : ''}`;
+            const notification = await createNotificationForUser(
+                user._id,
+                'promo',
+                title,
+                messageBody,
+                {
+                    type: 'promo',
+                    promo: {
+                        title,
+                        description,
+                        discountPercent: Number(discountPercent) || 0,
+                        imageUrls: [],
+                        expiresAt: null,
+                    }
+                }
+            );
+
             for (const token of getUserPushTokens(user)) {
                 if (!Expo.isExpoPushToken(token)) continue;
                 messages.push({
                     to: token,
                     sound: 'default',
-                    title: `🎉 ${title}`,
-                    body: `${description}${discountPercent > 0 ? ` Save ${discountPercent}%!` : ''}`,
-                    data: { type: 'promo', promoPayload },
+                    title: `New promo: ${title}`,
+                    body: messageBody,
+                    data: {
+                        type: 'promo',
+                        notificationId: notification._id.toString(),
+                        promoPayload,
+                    },
                 });
             }
         }
@@ -267,6 +312,22 @@ exports.updateOrderStatus = async (req, res) => {
         
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
+        const orderCode = order._id.toString().slice(-6).toUpperCase();
+        const notificationTitle = 'Order status updated';
+        const notificationBody = `Order #${orderCode} is now ${status}.`;
+        const notification = await createNotificationForUser(
+            order.user._id,
+            'order-status',
+            notificationTitle,
+            notificationBody,
+            {
+                type: 'order-status',
+                orderId: order._id.toString(),
+                orderCode,
+                status,
+            }
+        );
+
         // Send Push Notification
         const userTokens = getUserPushTokens(order.user);
         console.log('Order user:', order.user ? { name: order.user.name, pushTokens: userTokens.length } : 'null');
@@ -278,9 +339,15 @@ exports.updateOrderStatus = async (req, res) => {
             const messages = validTokens.map(token => ({
                 to: token,
                 sound: 'default',
-                title: 'Order Update',
-                body: `Your order #${order._id.toString().slice(-6).toUpperCase()} is now ${status}`,
-                data: { orderId: order._id },
+                title: notificationTitle,
+                body: notificationBody,
+                data: {
+                    type: 'order-status',
+                    notificationId: notification._id.toString(),
+                    orderId: order._id.toString(),
+                    orderCode,
+                    status,
+                },
             }));
 
             try {
@@ -388,6 +455,24 @@ exports.getPromos = async (req, res) => {
     }
 };
 
+exports.getPublicPromos = async (req, res) => {
+    try {
+        const now = new Date();
+        const promos = await Promo.find({
+            active: true,
+            $or: [
+                { expiresAt: { $exists: false } },
+                { expiresAt: null },
+                { expiresAt: { $gte: now } },
+            ],
+        }).sort({ createdAt: -1 });
+
+        res.json(promos);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 exports.createPromo = async (req, res) => {
     try {
         const { title, description, discountPercent, imageUrls = [], expiresAt } = req.body;
@@ -415,14 +500,33 @@ exports.createPromo = async (req, res) => {
 
         const messages = [];
         for (const user of users) {
+            const notificationTitle = `New promo: ${promo.title}`;
+            const notificationBody = `${promo.description}${discountLine}`;
+            const notification = await createNotificationForUser(
+                user._id,
+                'promo',
+                notificationTitle,
+                notificationBody,
+                {
+                    type: 'promo',
+                    promoId: promo._id.toString(),
+                    promo: promo.toObject(),
+                }
+            );
+
             for (const token of getUserPushTokens(user)) {
                 if (!Expo.isExpoPushToken(token)) continue;
                 messages.push({
                     to: token,
                     sound: 'default',
-                    title: `🎉 New Promotion: ${promo.title}`,
-                    body: `${promo.description}${discountLine}`,
-                    data: { type: 'promo', promoId: promo._id.toString(), promoPayload },
+                    title: notificationTitle,
+                    body: notificationBody,
+                    data: {
+                        type: 'promo',
+                        notificationId: notification._id.toString(),
+                        promoId: promo._id.toString(),
+                        promoPayload,
+                    },
                 });
             }
         }

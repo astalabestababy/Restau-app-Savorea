@@ -1,10 +1,12 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuthToken, setAuthToken, clearAuthToken } from '../utils/authToken';
 import API_URL from '../config/api';
-import Constants from 'expo-constants';
-import { registerForPushNotificationsAsync } from '../services/NotificationService';
+import {
+    clearStoredPushRegistration,
+    getStoredPushRegistration,
+    registerForPushNotificationsAsync
+} from '../services/NotificationService';
  
 
 const AuthContext = createContext();
@@ -47,9 +49,9 @@ export const AuthProvider = ({ children }) => {
             await setAuthToken(data.token);
             await AsyncStorage.setItem('user', JSON.stringify(userData));
             try {
-                const pushToken = await registerForPushNotificationsAsync();
-                if (pushToken) {
-                    await updatePushToken(pushToken);
+                const pushRegistration = await registerForPushNotificationsAsync();
+                if (pushRegistration) {
+                    await updatePushToken(pushRegistration);
                 }
             } catch (e) {
                 console.error('Push token registration after login failed:', e);
@@ -76,15 +78,54 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify(payload),
             });
             const data = await response.json().catch(() => ({}));
-            return { success: response.ok, message: data.message || 'Registration failed' };
+            if (response.ok && data?.token && data?.user) {
+                const userData = {
+                    ...data.user,
+                    id: data.user.id || data.user._id
+                };
+                setUser(userData);
+                await setAuthToken(data.token);
+                await AsyncStorage.setItem('user', JSON.stringify(userData));
+
+                try {
+                    const pushRegistration = await registerForPushNotificationsAsync();
+                    if (pushRegistration) {
+                        await updatePushToken(pushRegistration);
+                    }
+                } catch (e) {
+                    console.error('Push token registration after register failed:', e);
+                }
+
+                return { success: true, user: userData, message: data.message || 'Registration successful' };
+            }
+
+            return { success: false, message: data.message || 'Registration failed' };
         } catch (e) {
             return { success: false, message: e?.message || 'Registration failed' };
         }
     };
 
     const logout = async () => {
+        try {
+            const token = await getAuthToken();
+            const pushRegistration = await getStoredPushRegistration();
+            if (token && pushRegistration?.pushToken) {
+                await fetch(`${API_URL}/auth/push-token`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': token
+                    },
+                    body: JSON.stringify(pushRegistration)
+                });
+            }
+        } catch (e) {
+            console.error('Error removing push token:', e);
+        }
+
         setUser(null);
         await clearAuthToken();
+        await clearStoredPushRegistration();
         await AsyncStorage.removeItem('user');
  
     };
@@ -119,10 +160,16 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: data.message };
     };
 
-    const updatePushToken = useCallback(async (pushToken) => {
+    const updatePushToken = useCallback(async (pushRegistration) => {
         try {
             const token = await getAuthToken();
             if (!token) return;
+
+            const payload = typeof pushRegistration === 'string'
+                ? { pushToken: pushRegistration }
+                : pushRegistration;
+
+            if (!payload?.pushToken) return;
 
             const response = await fetch(`${API_URL}/auth/push-token`, {
                 method: 'PUT',
@@ -130,13 +177,13 @@ export const AuthProvider = ({ children }) => {
                     'Content-Type': 'application/json',
                     'x-auth-token': token
                 },
-                body: JSON.stringify({ pushToken }),
+                body: JSON.stringify(payload),
             });
 
             if (response.ok) {
                 setUser((prev) => {
                     if (!prev) return prev;
-                    const updatedUser = { ...prev, pushToken };
+                    const updatedUser = { ...prev, pushToken: payload.pushToken };
                     AsyncStorage.setItem('user', JSON.stringify(updatedUser)).catch(() => {});
                     return updatedUser;
                 });

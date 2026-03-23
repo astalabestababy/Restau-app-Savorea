@@ -102,7 +102,7 @@ const RegisterScreen = () => {
 
         if (result.success) {
             Alert.alert('Success', result.message || 'Registration successful.', [
-                { text: 'OK', onPress: () => navigation.navigate('Login') }
+                { text: 'OK', onPress: () => navigation.navigate('MainTabs') }
             ]);
         } else {
             Alert.alert('Registration Failed', result.message);

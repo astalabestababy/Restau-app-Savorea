@@ -114,6 +114,7 @@ const User = require('./models/User');
 const Order = require('./models/Order');
 const Review = require('./models/Review');
 const authController = require('./controllers/authController');
+const notificationController = require('./controllers/notificationController');
 const orderRoutes = require('./routes/orderRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -150,7 +151,11 @@ app.post('/api/auth/register', authController.register);
 app.post('/api/auth/login', authController.login);
 app.put('/api/auth/profile', auth, authController.updateProfile);
 app.put('/api/auth/push-token', auth, authController.updatePushToken);
+app.delete('/api/auth/push-token', auth, authController.removePushToken);
 app.get('/api/user/stats', auth, authController.getUserStats);
+app.get('/api/notifications', auth, notificationController.getMyNotifications);
+app.put('/api/notifications/read-all', auth, notificationController.markAllAsRead);
+app.put('/api/notifications/:id/read', auth, notificationController.markAsRead);
 
 // Order Routes
 app.use('/api/orders', orderRoutes);
@@ -159,6 +164,8 @@ app.use('/api/reviews', reviewRoutes);
 
 // Admin Routes
 app.use('/api/admin', adminRoutes);
+
+app.get('/api/promos', require('./controllers/adminController').getPublicPromos);
 
 app.get('/api/menu', async (req, res) => {
     try {

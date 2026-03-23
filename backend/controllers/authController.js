@@ -7,6 +7,20 @@ const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
 
+function buildAuthUser(user) {
+    return {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        address: user.address,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isActive: user.isActive,
+        avatar: user.avatar ?? null,
+        pushToken: user.pushToken ?? null
+    };
+}
+
 // Register User (JSON body; optional avatarBase64 — avoids React Native multipart losing text fields)
 exports.register = async (req, res) => {
     try {
@@ -57,9 +71,12 @@ exports.register = async (req, res) => {
 
         await user.save();
 
+        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+
         res.status(201).json({
             message: 'User registered successfully.',
-            email: user.email
+            token,
+            user: buildAuthUser(user)
         });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -81,16 +98,7 @@ exports.login = async (req, res) => {
 
         res.json({
             token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                address: user.address,
-                phoneNumber: user.phoneNumber,
-                role: user.role,
-                isActive: user.isActive,
-                avatar: user.avatar ?? null
-            }
+            user: buildAuthUser(user)
         });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -119,7 +127,7 @@ exports.updateProfile = async (req, res) => {
 // Update Push Token
 exports.updatePushToken = async (req, res) => {
     try {
-        const { pushToken } = req.body;
+        const { pushToken, installationId, platform, deviceName } = req.body;
         const user = await User.findById(req.user.id);
 
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -138,9 +146,65 @@ exports.updatePushToken = async (req, res) => {
 
         user.pushTokens = existingTokens;
         user.pushToken = normalizedToken;
+        const existingDevices = Array.isArray(user.pushDevices) ? user.pushDevices : [];
+        const normalizedInstallationId = typeof installationId === 'string' ? installationId.trim() : '';
+
+        if (normalizedInstallationId) {
+            user.pushDevices = [
+                ...existingDevices.filter(device => device.installationId !== normalizedInstallationId),
+                {
+                    installationId: normalizedInstallationId,
+                    token: normalizedToken,
+                    platform: typeof platform === 'string' ? platform.trim() : '',
+                    deviceName: typeof deviceName === 'string' ? deviceName.trim() : '',
+                    updatedAt: new Date()
+                }
+            ];
+        }
         await user.save();
         
-        res.json({ message: 'Push token updated', pushTokens: user.pushTokens });
+        res.json({
+            message: 'Push token updated',
+            pushToken: user.pushToken,
+            pushTokens: user.pushTokens,
+            pushDevices: user.pushDevices
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.removePushToken = async (req, res) => {
+    try {
+        const { pushToken, installationId } = req.body || {};
+        const user = await User.findById(req.user.id);
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const normalizedToken = typeof pushToken === 'string' ? pushToken.trim() : '';
+        const normalizedInstallationId = typeof installationId === 'string' ? installationId.trim() : '';
+
+        if (normalizedToken) {
+            user.pushTokens = (Array.isArray(user.pushTokens) ? user.pushTokens : []).filter(token => token !== normalizedToken);
+            if (user.pushToken === normalizedToken) {
+                user.pushToken = user.pushTokens[0] || null;
+            }
+        }
+
+        if (normalizedInstallationId) {
+            user.pushDevices = (Array.isArray(user.pushDevices) ? user.pushDevices : []).filter(
+                device => device.installationId !== normalizedInstallationId
+            );
+        }
+
+        await user.save();
+
+        res.json({
+            message: 'Push token removed',
+            pushToken: user.pushToken,
+            pushTokens: user.pushTokens,
+            pushDevices: user.pushDevices
+        });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

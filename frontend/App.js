@@ -1,5 +1,6 @@
 import React from 'react';
 import * as Notifications from 'expo-notifications';
+import { AppState } from 'react-native';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from './src/navigation/rootNavigation';
@@ -9,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from './src/redux/store';
+import { fetchOrders } from './src/redux/slices/orderSlice';
 
 import { CartProvider } from './src/context/CartContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -31,6 +33,7 @@ import AdminAnalyticsScreen from './src/screens/admin/AdminAnalyticsScreen';
 import AdminReviewsScreen from './src/screens/admin/AdminReviewsScreen';
 import AdminPromoScreen from './src/screens/admin/AdminPromoScreen';
 import PromoDetailsScreen from './src/screens/PromoDetailsScreen';
+import NotificationDetailsScreen from './src/screens/NotificationDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +41,7 @@ const Navigation = () => {
   const { loading, user } = useAuth();
   const { colors } = useTheme();
   const { updatePushToken } = useAuth(); 
+  const userId = user?.id ?? user?._id;
 
   React.useEffect(() => {
     console.log('App useEffect, user:', user ? { name: user.name, pushToken: user.pushToken ? 'present' : 'null' } : 'null');
@@ -50,7 +54,7 @@ const Navigation = () => {
         const token = await registerForPushNotificationsAsync();
         if (token) {
           await updatePushToken(token);
-          console.log('Push token registered:', token.slice(0, 20) + '...');
+          console.log('Push token registered:', token.pushToken.slice(0, 20) + '...');
         }
       } catch (error) {
         console.error('Push registration failed:', error);
@@ -59,13 +63,57 @@ const Navigation = () => {
     registerToken();
   }, [updatePushToken]); 
 
+  React.useEffect(() => {
+    if (!userId) return undefined;
+
+    const refreshOrders = () => {
+      store.dispatch(fetchOrders());
+    };
+
+    refreshOrders();
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        refreshOrders();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [userId]);
+
   // Handle notification tap: order updates or promo / discount broadcasts
   React.useEffect(() => {
+    const refreshOrders = () => {
+      if (userId) {
+        store.dispatch(fetchOrders());
+      }
+    };
+
+    const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
+      const data = notification.request.content.data || {};
+      if (data.orderId) {
+        refreshOrders();
+      }
+    });
+
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data || {};
       if (!navigationRef.current) return;
 
+      if (data.notificationId) {
+        navigationRef.current.navigate('NotificationDetails', {
+          notificationId: data.notificationId,
+          notificationData: {
+            ...data,
+            title: response.notification.request.content.title,
+            body: response.notification.request.content.body,
+          },
+        });
+        return;
+      }
+
       if (data.orderId) {
+        refreshOrders();
         navigationRef.current.navigate('OrderHistory', { orderId: data.orderId });
         return;
       }
@@ -82,8 +130,11 @@ const Navigation = () => {
         }
       }
     });
-    return () => subscription.remove();
-  }, []); 
+    return () => {
+      foregroundSubscription.remove();
+      subscription.remove();
+    };
+  }, [userId]); 
 
   if (loading) {
     return (
@@ -111,6 +162,7 @@ const Navigation = () => {
         <Stack.Screen name="AdminReviews" component={AdminReviewsScreen} />
         <Stack.Screen name="AdminPromo" component={AdminPromoScreen} />
         <Stack.Screen name="PromoDetails" component={PromoDetailsScreen} />
+        <Stack.Screen name="NotificationDetails" component={NotificationDetailsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

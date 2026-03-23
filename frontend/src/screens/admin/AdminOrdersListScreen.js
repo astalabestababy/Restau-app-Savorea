@@ -93,12 +93,12 @@ const AdminOrdersListScreen = () => {
                 <Text style={[styles.totalAmount, { color: colors.primary }]}>{'\u20B1'}{item.totalAmount.toFixed(2)}</Text>
                 <View style={styles.actionButtons}>
                     {item.status === 'Pending' && (
-                        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#48BB78' }]} onPress={() => updateStatus(item._id, 'Confirmed')}>
+                        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#48BB78' }]} onPress={() => updateStatus(item._id, 'Processing')}>
                             <Ionicons name="checkmark" size={20} color="#fff" />
                         </TouchableOpacity>
                     )}
-                    {item.status === 'Confirmed' && (
-                        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#4299E1' }]} onPress={() => updateStatus(item._id, 'Delivered')}>
+                    {item.status === 'Processing' && (
+                        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#4299E1' }]} onPress={() => updateStatus(item._id, 'Out for Delivery')}>
                             <Ionicons name="bicycle" size={20} color="#fff" />
                         </TouchableOpacity>
                     )}
@@ -111,7 +111,7 @@ const AdminOrdersListScreen = () => {
         switch (status) {
             case 'Pending': return '#ECC94B';
             case 'Processing': return '#38B2AC';
-            case 'Confirmed': return '#48BB78';
+            case 'Out for Delivery': return '#4299E1';
             case 'Delivered': return '#4299E1';
             case 'Cancelled': return '#F56565';
             default: return '#718096';

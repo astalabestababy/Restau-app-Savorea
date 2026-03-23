@@ -6,6 +6,8 @@ import MenuScreen from '../screens/MenuScreen';
 import CartScreen from '../screens/CartScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import OrderHistoryScreen from '../screens/OrderHistoryScreen';
+import PromosScreen from '../screens/PromosScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 import AdminDashboard from '../screens/admin/AdminDashboard';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -34,6 +36,8 @@ const MainNavigator = () => {
             <Drawer.Screen name="Cart" component={CartScreen} />
             <Drawer.Screen name="OrderHistory" component={OrderHistoryScreen} />
             <Drawer.Screen name="Profile" component={ProfileScreen} />
+            <Drawer.Screen name="Promos" component={PromosScreen} />
+            <Drawer.Screen name="Notifications" component={NotificationsScreen} />
             {isAdmin && (
                 <Drawer.Screen 
                     name="Admin" 

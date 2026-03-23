@@ -47,7 +47,15 @@
       "package": "com.savorea.app"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#c41e43",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "web": {
       "favicon": "./assets/favicon.png"

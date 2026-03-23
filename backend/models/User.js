@@ -37,6 +37,16 @@ const UserSchema = new mongoose.Schema({
         type: [String],
         default: []
     },
+    pushDevices: {
+        type: [{
+            installationId: { type: String, required: true },
+            token: { type: String, required: true },
+            platform: { type: String, default: '' },
+            deviceName: { type: String, default: '' },
+            updatedAt: { type: Date, default: Date.now }
+        }],
+        default: []
+    },
     pushToken: {
         type: String,
         default: null
