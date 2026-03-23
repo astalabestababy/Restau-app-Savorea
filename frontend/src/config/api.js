@@ -4,61 +4,65 @@ import { Platform } from 'react-native';
 /**
  * Base URL for API calls, must end with `/api`.
  *
- * iOS (physical device, Expo Go / dev client):
- *   Use Expo LAN (not Tunnel). Set `frontend/.env`:
- *   EXPO_PUBLIC_API_URL=http://YOUR_PC_LAN_IP:5000/api
- *   (iOS needs ATS local-network allowance in app.json — see NSAllowsLocalNetworking.)
+ * Preferred override:
+ *   EXPO_PUBLIC_API_URL=https://your-api.example.com/api
  *
- * Android APK (EAS preview/production):
- *   Bake the real API URL at build time via the same env var in `eas.json` → build profile → `env`,
- *   or set `expo.extra.apiUrl` in app.json for a fixed production base.
- *   Prefer HTTPS for public APKs; `usesCleartextTraffic` is only for HTTP during dev.
- *
- * Android emulator: localhost from Metro is mapped to 10.0.2.2 so the emulator can reach the host.
+ * Fallback order:
+ *   1. EXPO_PUBLIC_API_URL
+ *   2. Expo config extra.apiUrl
+ *   3. Metro host in local dev
+ *   4. Render production API
  */
 function normalizeApiUrl(url) {
     if (!url || typeof url !== 'string') return null;
-    const u = url.trim().replace(/\/+$/, '');
-    if (!u.startsWith('http')) return null;
-    return u.endsWith('/api') ? u : `${u}/api`;
+    const normalized = url.trim().replace(/\/+$/, '');
+    if (!/^https?:\/\//i.test(normalized)) return null;
+    return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
 }
 
-/** Production API (Render). Used when env/extra are missing — e.g. misconfigured EAS env. */
 const DEFAULT_PRODUCTION_API = 'https://savorea.onrender.com/api';
 
-const getApiUrl = () => {
+function getExtraApiUrl() {
+    return normalizeApiUrl(
+        Constants.expoConfig?.extra?.apiUrl ||
+        Constants.manifest?.extra?.apiUrl ||
+        Constants.manifest2?.extra?.expoClient?.extra?.apiUrl
+    );
+}
+
+function getDebuggerHost() {
+    return Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost || null;
+}
+
+function getApiConfig() {
     const fromEnv = normalizeApiUrl(process.env.EXPO_PUBLIC_API_URL);
     if (fromEnv) {
-        return fromEnv;
+        return { url: fromEnv, source: 'env' };
     }
 
-    const fromExtra = normalizeApiUrl(Constants.expoConfig?.extra?.apiUrl);
+    const fromExtra = getExtraApiUrl();
     if (fromExtra) {
-        return fromExtra;
+        return { url: fromExtra, source: 'expo-extra' };
     }
 
     if (Platform.OS === 'web') {
-        return 'http://localhost:5000/api';
+        return { url: 'http://localhost:5000/api', source: 'web-localhost' };
     }
 
-    const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
-
-    if (debuggerHost) {
+    const debuggerHost = getDebuggerHost();
+    if (typeof __DEV__ !== 'undefined' && __DEV__ && debuggerHost) {
         let host = debuggerHost.split(':')[0];
         if (Platform.OS === 'android' && (host === 'localhost' || host === '127.0.0.1')) {
             host = '10.0.2.2';
         }
-        return `http://${host}:5000/api`;
+        return { url: `http://${host}:5000/api`, source: 'metro-host' };
     }
 
-    // Standalone APK / production: never use a random LAN IP — it causes infinite loading on menu fetch.
-    if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        return 'http://192.168.100.13:5000/api';
-    }
-    return DEFAULT_PRODUCTION_API;
-};
+    return { url: DEFAULT_PRODUCTION_API, source: 'default-production' };
+}
 
-const API_URL = getApiUrl();
-console.log('[API CONFIG] Using API_URL:', API_URL);
+const { url: API_URL, source: API_SOURCE } = getApiConfig();
+
+console.log('[API CONFIG] Using API_URL:', API_URL, 'source:', API_SOURCE);
 
 export default API_URL;

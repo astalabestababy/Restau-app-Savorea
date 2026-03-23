@@ -38,4 +38,7 @@ yarn-error.*
 
 # generated native folders
 /ios
+# Firebase service account and config
+savorea-7b11c-firebase-adminsdk-fbsvc-d796e5faad.json
+google-services.json
 /android

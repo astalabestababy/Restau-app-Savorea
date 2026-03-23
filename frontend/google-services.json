@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "659219923104",
+    "project_id": "savorea-7b11c",
+    "storage_bucket": "savorea-7b11c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659219923104:android:bd17356b2d3a0938ab09c5",
+        "android_client_info": {
+          "package_name": "com.savorea.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBshse671Mqw7UH9oao1rFrpAO1Wk3NmDk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
